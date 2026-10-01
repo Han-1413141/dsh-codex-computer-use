@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-01",
+  "version": "0.1.2",
+  "host": "DSH desktop Electron executable in Node mode",
+  "codex_environment_removed": true,
+  "codex_path_entries_removed": true,
+  "runtime_version": "0.7.5",
+  "cli_auto_discovered": true,
+  "native_window_enumeration": "passed",
+  "screenshots_or_input_performed": false,
+  "model_requests": 0
+}

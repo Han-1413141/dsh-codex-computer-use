@@ -1,0 +1,59 @@
+{
+  "name": "dsh-codex-computer-use",
+  "version": "0.1.2",
+  "description": "Let DSH use the locally installed Codex Computer Use runtime on Windows.",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": { ".": "./src/index.mjs", "./client": "./lib/client.js", "./package.json": "./package.json" },
+  "bin": { "dsh-codex-computer-use": "bin/cli.mjs" },
+  "files": ["src", "lib", "bin", "scripts/build.mjs", "cordis.patch.yml", "README.md", "LICENSE", "docs"],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "npm run build",
+    "test": "node --test test/*.test.mjs",
+    "doctor": "node bin/cli.mjs doctor",
+    "test:host": "node scripts/host-smoke.mjs",
+    "test:startup": "node scripts/clean-env-smoke.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "os": ["win32"],
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Han-1413141/dsh-codex-computer-use.git" },
+  "homepage": "https://github.com/Han-1413141/dsh-codex-computer-use#readme",
+  "bugs": { "url": "https://github.com/Han-1413141/dsh-codex-computer-use/issues" },
+  "keywords": ["dsh-plugin", "codex", "computer-use", "windows"],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-commands",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-api-session-controller"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-sdk-client": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-sandbox-policy": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-attachment": "0.2.0-rc.2",
+    "esbuild": "^0.25.0",
+    "react": "^18.3.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-sandbox-policy": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-attachment": "0.2.0-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": { "optional": true },
+    "@deepseek-ai/dsh-sandbox": { "optional": true },
+    "@deepseek-ai/dsh-sandbox-policy": { "optional": true },
+    "@deepseek-ai/dsh-attachment": { "optional": true }
+  }
+}

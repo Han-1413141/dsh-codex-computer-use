@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "dsh_version": "0.2.0-rc.2",
+  "model": "local HTTP fixture; no paid model request",
+  "trace": [
+    {
+      "tool": "codex_computer_read",
+      "action": "status"
+    },
+    {
+      "tool": "codex_computer_read",
+      "action": "list_windows"
+    },
+    {
+      "tool": "codex_computer_read",
+      "action": "get_window_state"
+    },
+    {
+      "tool": "codex_computer_action",
+      "action": "click"
+    },
+    {
+      "tool": "codex_computer_action",
+      "action": "type_text"
+    },
+    {
+      "tool": "codex_computer_action",
+      "action": "click"
+    }
+  ],
+  "image_count": 4,
+  "typed_text_verified": true,
+  "final_accessibility": "Window: \"DSH Computer Use Test 1790833287062\", App: DshComputerUseFixture.exe.\n\t0 窗口 DSH Computer Use Test 1790833287062 Secondary Actions: Raise\n\t\t1 编辑 (settable, string) Test input Value: DSH Codex native input 2026 ID: 25103856\n\t\t2 按钮 Verify input ID: 22416882\n\t\t3 文本 Verified: DSH Codex native input 2026 ID: 2166278\n\t\t4 标题栏 (settable, string) Value: DSH Computer Use Test 1790833287062\n\t\t\t5 菜单栏 系统 ID: MenuBar\n\t\t\t\t10 菜单项 系统\n\t\t\t7 按钮 最小化\n\t\t\t8 按钮 最大化\n\t\t\t9 按钮 关闭\n\nThe focused UI element is 2 按钮 Verify input ID: 22416882."
+}

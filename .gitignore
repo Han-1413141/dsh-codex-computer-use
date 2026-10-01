@@ -1,0 +1,6 @@
+node_modules/
+.test-output/
+installation.json
+*.tgz
+*.log
+.DS_Store
