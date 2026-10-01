@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "plugin_version": "0.1.3",
+  "plugin_version": "0.1.4",
   "dsh_version": "0.2.0-rc.2",
   "permission_mode": "danger-full-access",
   "approval_policy": "never",
@@ -21,6 +21,10 @@
     },
     {
       "tool": "codex_computer_action",
+      "action": "activate_window"
+    },
+    {
+      "tool": "codex_computer_action",
       "action": "click"
     },
     {
@@ -36,7 +40,20 @@
       "action": "click"
     }
   ],
-  "image_count": 5,
+  "image_count": 6,
   "typed_text_verified": true,
-  "final_accessibility": "Window: \"DSH Computer Use Test 1790837674698\", App: DshComputerUseFixture.exe.\n\t0 窗口 DSH Computer Use Test 1790837674698 Secondary Actions: Raise\n\t\t1 编辑 (settable, string) Test input Value: DSH Codex native input 2026 ID: 8392444\n\t\t2 按钮 Verify input ID: 4524550\n\t\t3 文本 Waiting for input ID: 1837676\n\t\t4 标题栏 (settable, string) Value: DSH Computer Use Test 1790837674698\n\t\t\t5 菜单栏 系统 ID: MenuBar\n\t\t\t\t10 菜单项 系统\n\t\t\t7 按钮 最小化\n\t\t\t8 按钮 最大化\n\t\t\t9 按钮 关闭\n\nThe focused UI element is 1 编辑 (settable, string) Test input Value: DSH Codex native input 2026 ID: 8392444."
+  "turn_end_cleanup": {
+    "host_still_open": true,
+    "worker_exit_code": 0,
+    "process_names": [
+      "plugin worker",
+      "conhost.exe",
+      "codex-computer-use.exe",
+      "conhost.exe",
+      "codex-computer-use.exe",
+      "conhost.exe"
+    ],
+    "remaining_processes": 0
+  },
+  "final_accessibility": "Window: \"DSH Computer Use Test 1790840274493\", App: DshComputerUseFixture.exe.\n\t0 窗口 DSH Computer Use Test 1790840274493 Secondary Actions: Raise\n\t\t1 编辑 (settable, string) Test input Value: DSH Codex native input 2026 ID: 660712\n\t\t2 按钮 Verify input ID: 1119452\n\t\t3 文本 Verified: DSH Codex native input 2026 ID: 660698\n\t\t4 标题栏 (settable, string) Value: DSH Computer Use Test 1790840274493\n\t\t\t5 菜单栏 系统 ID: MenuBar\n\t\t\t\t6 菜单项 系统\n\t\t\t7 按钮 最小化\n\t\t\t8 按钮 最大化\n\t\t\t9 按钮 关闭\n\nThe focused UI element is 2 按钮 Verify input ID: 1119452."
 }

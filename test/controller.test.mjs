@@ -93,7 +93,7 @@ test('全访问模式也必须执行显式的当次确认', async () => {
   let asked = 0;
   const ctx = { sandboxPolicy: { resolve: () => ({ mode: 'danger-full-access' }) }, get: key => key === 'userQuestions' ? { ask: async input => { asked++; return { answers: [{ id: input.questions[0].id, selected: ['拒绝'] }] }; } } : { request: () => assert.fail('完全权限下不应请求普通工具审批') } };
   const exec = { agent: { session: { id: 'a' } }, signal: new AbortController().signal, callId: 'x', name: 'tool' };
-  await assert.rejects(authorize(ctx, exec, { confirm: true, reason: '确认操作' }, 'click'), /未批准/);
+  await assert.rejects(authorize(ctx, exec, { confirm: true, reason: '确认操作' }, 'click', { approvalUi: 'dsh' }), /未批准/);
   assert.equal(asked, 1);
 });
 test('原生停止错误不再要求重新观察或重复调用', async () => {

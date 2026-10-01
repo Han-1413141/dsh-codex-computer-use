@@ -4,7 +4,7 @@ import { createAppApprover } from '../src/approval.mjs';
 import { authorize } from '../src/index.mjs';
 export const inject = ['tools', 'userQuestions', 'sandboxPolicy', 'approval'];
 export function apply(ctx) {
-  const approve = createAppApprover(ctx);
+  const approve = createAppApprover(ctx, { approvalUi: 'dsh' });
   ctx.tools.register(defineTool({
     name: 'computer_consent_fixture', description: 'Local test of the human consent dialog; never accesses the desktop.',
     parameters: { operation: { type: 'string', enum: ['app', 'action'], required: true } },
@@ -13,7 +13,7 @@ export function apply(ctx) {
       let accepted;
       if (args.operation === 'app') accepted = await approve(exec, { app: 'dsh-consent-fixture', displayName: 'DSH 授权界面测试（模拟应用）' });
       else {
-        await authorize(ctx, exec, { confirm: true, reason: '验证完全权限下的单次操作确认。这里只返回测试结果，不执行任何桌面操作。' }, 'fixture');
+        await authorize(ctx, exec, { confirm: true, reason: '验证完全权限下的单次操作确认。这里只返回测试结果，不执行任何桌面操作。' }, 'fixture', { approvalUi: 'dsh' });
         accepted = await approve(exec, { app: 'dsh-consent-fixture-second', displayName: 'DSH 同一次调用中的第二个确认（模拟应用）' });
       }
       return { accepted, mode: ctx.sandboxPolicy.resolve({ session: exec.agent.session }).mode, policy: ctx.approval.overrideOf(exec.agent.session) };

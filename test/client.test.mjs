@@ -27,3 +27,22 @@ test('原生应用授权转发给调用者，拒绝不被改成同意', async ()
     assert.deepEqual(await c.call('approval'), { accepted: false });
   } finally { await c.dispose(); }
 });
+
+test('任务结束优雅关闭工作进程，后续新轮次可以重新启动', async () => {
+  const c = client();
+  try {
+    await c.call('ready', {}, 'a'); const child = c.child;
+    await c.release('a'); assert.equal(c.child, null); assert.equal(child.exitCode, 0);
+    assert.deepEqual(await c.call('ready', {}, 'a'), { sequence: 1 });
+  } finally { await c.dispose(); }
+});
+
+test('其他会话结束不会停止当前会话；切换会话重建原生连接', async () => {
+  const c = client();
+  try {
+    await c.call('ready', {}, 'a'); const first = c.child;
+    assert.deepEqual(await c.call('ready', {}, 'b'), { sequence: 1 }); assert.equal(first.exitCode, 0);
+    const second = c.child; await c.release('a'); assert.equal(c.child, second);
+    assert.deepEqual(await c.call('ready', {}, 'b'), { sequence: 2 });
+  } finally { await c.dispose(); }
+});

@@ -1,12 +1,27 @@
 {
   "name": "dsh-codex-computer-use",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Let DSH use the locally installed Codex Computer Use runtime on Windows.",
   "type": "module",
   "main": "src/index.mjs",
-  "exports": { ".": "./src/index.mjs", "./client": "./lib/client.js", "./package.json": "./package.json" },
-  "bin": { "dsh-codex-computer-use": "bin/cli.mjs" },
-  "files": ["src", "lib", "bin", "scripts/build.mjs", "cordis.patch.yml", "README.md", "LICENSE", "docs"],
+  "exports": {
+    ".": "./src/index.mjs",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dsh-codex-computer-use": "bin/cli.mjs"
+  },
+  "files": [
+    "src",
+    "lib",
+    "bin",
+    "scripts/build.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
   "scripts": {
     "build": "node scripts/build.mjs",
     "prepack": "npm run build",
@@ -16,15 +31,31 @@
     "test:startup": "node scripts/clean-env-smoke.mjs",
     "check": "node scripts/check.mjs"
   },
-  "engines": { "node": "^22.19.0 || >=24.0.0" },
-  "os": ["win32"],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "os": [
+    "win32"
+  ],
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/Han-1413141/dsh-codex-computer-use.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Han-1413141/dsh-codex-computer-use.git"
+  },
   "homepage": "https://github.com/Han-1413141/dsh-codex-computer-use#readme",
-  "bugs": { "url": "https://github.com/Han-1413141/dsh-codex-computer-use/issues" },
-  "keywords": ["dsh-plugin", "codex", "computer-use", "windows"],
+  "bugs": {
+    "url": "https://github.com/Han-1413141/dsh-codex-computer-use/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "codex",
+    "computer-use",
+    "windows"
+  ],
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "inject": [
@@ -51,9 +82,17 @@
     "@deepseek-ai/dsh-attachment": "0.2.0-rc.2"
   },
   "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-tools": { "optional": true },
-    "@deepseek-ai/dsh-sandbox": { "optional": true },
-    "@deepseek-ai/dsh-sandbox-policy": { "optional": true },
-    "@deepseek-ai/dsh-attachment": { "optional": true }
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-sandbox": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-sandbox-policy": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-attachment": {
+      "optional": true
+    }
   }
 }

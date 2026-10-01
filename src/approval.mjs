@@ -1,9 +1,20 @@
 import { randomUUID } from 'node:crypto';
+import { requestWindowsConsent } from './windows-consent.mjs';
 
 /** Human consent is independent of sandbox escalation (whose policy may be never). */
-export async function requestConsent(ctx, exec, { question, detail, allow, header }) {
+export async function requestConsent(ctx, exec, { question, detail, allow, header }, { approvalUi = 'window' } = {}) {
   exec.signal.throwIfAborted();
   if (!exec.agent?.session.id) throw new Error('人工确认需要 DSH 会话。');
+  if (!['window', 'dsh'].includes(approvalUi)) throw new Error('approvalUi 只能是 window 或 dsh。');
+  if (approvalUi === 'window') {
+    const agents = ctx.get('agents');
+    if (!agents || agents.get(exec.agent.id) !== exec.agent || !agents.roots().includes(exec.agent)) {
+      throw new Error('应用授权只能由当前 DSH 根会话请求；子代理需将请求交回主会话。');
+    }
+    const accepted = await requestWindowsConsent({ question, detail, allow, deny: '拒绝', header }, exec.signal);
+    exec.signal.throwIfAborted();
+    return accepted;
+  }
   const questions = ctx.get('userQuestions');
   if (!questions?.ask) throw new Error('当前 DSH 没有人工确认入口。请连接支持用户问答的 DSH 桌面或 Web 界面；无需切换完全权限模式。');
   const id = `computer-use-consent-${randomUUID()}`;
@@ -49,7 +60,7 @@ export function installAppApprovalHook(approveApp) {
 }
 
 /** Session consent is scoped to the exact app id and only cached after a real approval. */
-export function createAppApprover(ctx) {
+export function createAppApprover(ctx, config = {}) {
   const accepted = new Map();
   return async (exec, { app, displayName }) => {
     exec.signal.throwIfAborted();
@@ -60,7 +71,7 @@ export function createAppApprover(ctx) {
       header: '应用授权', allow: '允许本次会话',
       question: `允许本次 DSH 会话通过 Codex Computer Use 读取和操作应用“${displayName}”吗？`,
       detail: `应用标识：${app}。包括窗口截图、读取控件、鼠标和键盘操作；发送、删除、付款等仍需按任务另行确认。此确认独立于普通工具审批，完全权限模式也会显示。`,
-    });
+    }, config);
     exec.signal.throwIfAborted();
     if (!allowed) return false;
     if (!accepted.has(owner)) {

@@ -4,11 +4,12 @@ import { installAppApprovalHook } from './approval.mjs';
 import { randomUUID } from 'node:crypto';
 import { describeNativeError } from './errors.mjs';
 
-let runtime, controller, initializing, activeRequest;
+let runtime, controller, initializing, activeRequest, sky, closing = false;
 const approvals = new Map();
 async function initialize(config) {
   if (!initializing) initializing = loadSky(config).then(loaded => {
     runtime = loaded.runtime;
+    sky = loaded.sky;
     controller = new ComputerController(loaded.sky, config);
     installAppApprovalHook(request => new Promise((resolve, reject) => {
       if (!activeRequest || !process.connected) { reject(new Error('当前没有可接收应用授权的 DSH 调用。')); return; }
@@ -21,13 +22,17 @@ async function initialize(config) {
 }
 let queue = Promise.resolve();
 process.on('message', request => {
+  if (request?.type === 'shutdown') { void shutdown(); return; }
+  if (closing) return;
   if (request?.type === 'approval-result') {
     approvals.get(request.approvalId)?.(request.accepted === true);
     approvals.delete(request.approvalId); return;
   }
   queue = queue.then(async () => {
     try {
+      if (closing) return;
       await initialize(request.config);
+      if (closing) return;
       activeRequest = request;
       const value = request.action === 'status'
         ? { runtime_loaded: true, native_call_verified: false, platform: 'windows', runtime_version: runtime.version, runtime_path: runtime.root, codex_cli_path: runtime.codexCliPath, connection: 'local-package', app_approval: 'dsh-session', next_action: 'list_windows', note: '接口已加载且已定位 codex.exe；尚未验证原生调用。请 list_windows 验证连接，成功后再继续操作；首次访问应用会请求 DSH 人工授权。' }
@@ -38,4 +43,15 @@ process.on('message', request => {
     } finally { activeRequest = null; }
   });
 });
-process.on('disconnect', () => process.exit(0));
+async function shutdown() {
+  if (closing) return;
+  closing = true;
+  for (const resolve of approvals.values()) resolve(false);
+  approvals.clear();
+  const deadline = setTimeout(() => process.exit(1), 4500);
+  try {
+    await initializing?.catch(() => {});
+    await sky?.close?.();
+  } finally { clearTimeout(deadline); process.exit(0); }
+}
+process.on('disconnect', () => { void shutdown(); });

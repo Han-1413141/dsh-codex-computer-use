@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 /** Private IPC to our own worker; the worker uses the public @oai/sky API. */
 export class ComputerClient {
   constructor(config = {}, { workerUrl = new URL('./worker.mjs', import.meta.url) } = {}) {
-    this.config = config; this.workerUrl = workerUrl; this.child = null; this.pending = new Map();
+    this.config = config; this.workerUrl = workerUrl; this.child = null; this.owner = null; this.pending = new Map();
     this.closed = false; this.queue = Promise.resolve(); this.stopping = Promise.resolve();
     this.timeoutMs = config.timeoutMs ?? 30000;
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs < 1000 || this.timeoutMs > 120000) throw new Error('timeoutMs 应在 1000–120000 毫秒之间。');
@@ -36,11 +36,19 @@ export class ComputerClient {
     return child;
   }
   stop(error) {
-    const child = this.child; this.child = null;
+    const child = this.child; this.child = null; this.owner = null;
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
     if (child && child.exitCode === null && child.signalCode === null) {
-      this.stopping = new Promise(resolve => { child.once('exit', resolve); child.once('error', resolve); child.kill(); });
+      this.stopping = new Promise(resolve => {
+        const timer = setTimeout(() => child.kill(), 5000);
+        const done = () => { clearTimeout(timer); resolve(); };
+        child.once('exit', done); child.once('error', done);
+        // The worker calls sky.close() so the native overlay is dismissed.
+        // Killing Node immediately leaves no chance to close the SDK cleanly.
+        if (child.connected) child.send({ type: 'shutdown' }, error => { if (error) child.kill(); });
+        else child.kill();
+      });
     }
   }
   call(action, args = {}, owner = 'cli', signal, approveApp) {
@@ -48,6 +56,11 @@ export class ComputerClient {
       await this.stopping;
       if (this.closed) throw new Error('插件已卸载。');
       signal?.throwIfAborted();
+      if (this.child && this.owner !== owner) {
+        this.stop(new Error('Computer Use 已切换会话；请重新观察。'));
+        await this.stopping;
+      }
+      this.owner = owner;
       return new Promise((resolve, reject) => {
         const id = randomUUID();
         let timer;
@@ -65,6 +78,15 @@ export class ComputerClient {
       }).catch(async error => { await this.stopping; throw error; });
     };
     const result = this.queue.then(run);
+    this.queue = result.catch(() => {});
+    return result;
+  }
+  release(owner) {
+    const result = this.queue.then(async () => {
+      if (this.owner !== owner) return;
+      this.stop(new Error('本轮 Computer Use 已结束。'));
+      await this.stopping;
+    });
     this.queue = result.catch(() => {});
     return result;
   }

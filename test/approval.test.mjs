@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAppApprover, installAppApprovalHook } from '../src/approval.mjs';
+import { createAppApprover as makeAppApprover, installAppApprovalHook, requestConsent } from '../src/approval.mjs';
+const createAppApprover = ctx => makeAppApprover(ctx, { approvalUi: 'dsh' });
 
 const exec = id => ({ agent: { session: { id } }, signal: new AbortController().signal, callId: 'call', name: 'codex_computer_read' });
+test('独立授权窗口不接受非注册根会话的请求', async () => {
+  await assert.rejects(requestConsent({ get: () => undefined }, exec('a'), {}), /根会话/);
+});
 test('应用许可只在人工批准后缓存，且按会话和应用隔离', async () => {
   let requests = 0, outcome = '拒绝';
   const approve = createAppApprover({ get: key => {

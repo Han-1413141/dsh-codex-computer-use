@@ -73,7 +73,7 @@ export async function loadSky(options = {}) {
   // This module is loaded in our isolated worker; never write user/system environment settings.
   process.env.CODEX_CLI_PATH = codexCliPath;
   const { sky } = await import(pathToFileURL(runtime.entry).href);
-  const methods = ['list_windows', 'list_apps', 'get_window_state', 'click', 'type_text', 'press_key', 'scroll', 'drag', 'set_value', 'perform_secondary_action', 'activate_window', 'launch_app'];
+  const methods = ['close', 'list_windows', 'list_apps', 'get_window_state', 'click', 'type_text', 'press_key', 'scroll', 'drag', 'set_value', 'perform_secondary_action', 'activate_window', 'launch_app'];
   if (sky?.target !== 'windows' || methods.some(method => typeof sky[method] !== 'function')) {
     throw new Error(`@oai/sky ${runtime.version} 与所需 Windows API 不兼容。`);
   }

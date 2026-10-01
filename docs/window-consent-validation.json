@@ -1,0 +1,12 @@
+{
+  "plugin_version": "0.1.4",
+  "passed": true,
+  "form_choices": [
+    "Cancel",
+    "OK"
+  ],
+  "production_dialog_shown": true,
+  "cancelled_dialog_exited": true,
+  "real_app_permission_granted": false,
+  "note": "Presentation fixture checks buttons and rendering; real production dialog checks startup and cancellation."
+}

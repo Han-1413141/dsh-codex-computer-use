@@ -2,13 +2,28 @@
 import { appendFileSync } from 'node:fs';
 import { win32 } from 'node:path';
 import assert from 'node:assert/strict';
+import { ComputerClient } from '../src/client.mjs';
 export const inject = ['approval', 'userQuestions', 'sandboxPolicy'];
 export function apply(ctx, config) {
+  if (config.workerLog) {
+    const start = ComputerClient.prototype.start;
+    ComputerClient.prototype.start = function () {
+      const existing = this.child, child = start.call(this);
+      if (!existing) {
+        appendFileSync(config.workerLog, JSON.stringify({ event: 'started', pid: child.pid }) + '\n');
+        child.once('exit', (code, signal) => appendFileSync(config.workerLog, JSON.stringify({ event: 'exit', pid: child.pid, code, signal }) + '\n'));
+      }
+      return child;
+    };
+    ctx.effect(() => () => { ComputerClient.prototype.start = start; });
+  }
   ctx.on('user-questions/request', (request, next) => {
     const question = request.questions?.[0];
     if (request.questions?.length !== 1 || !question?.id.startsWith('computer-use-consent-')) return next();
     const ids = [config.app, win32.basename(config.app).toLowerCase()];
     if (!ids.some(app => question.detail?.includes(`应用标识：${app}。`))) return next();
+    assert.equal(ctx.get('agents').get(request.agent.id), request.agent);
+    assert(ctx.get('agents').roots().includes(request.agent));
     assert.equal(ctx.approval.overrideOf(request.agent.session), 'never');
     assert.equal(ctx.sandboxPolicy.resolve({ session: request.agent.session }).mode, 'danger-full-access');
     appendFileSync(config.log, JSON.stringify({ kind: 'fixture-app-consent', question: question.question, expectedApp: config.app }) + '\n');
