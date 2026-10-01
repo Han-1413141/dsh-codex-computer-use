@@ -2,7 +2,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools';
 import { approveEscalation } from '@deepseek-ai/dsh-sandbox';
 import { ComputerClient } from './client.mjs';
 import { READ_ACTIONS, INPUT_ACTIONS } from './controller.mjs';
-import { createAppApprover } from './approval.mjs';
+import { createAppApprover, requestConsent } from './approval.mjs';
 
 export const name = 'dsh-codex-computer-use';
 export const inject = ['tools', 'sandboxPolicy', 'attachments'];
@@ -15,9 +15,10 @@ export async function authorize(ctx, exec, args, action) {
     { approver: approval, agent: exec.agent, callId: exec.callId, toolName: exec.name, signal: exec.signal });
   // Explicit action-time confirmation remains necessary even in full-access sessions.
   if (args.confirm === true && policy.mode === 'danger-full-access') {
-    if (!approval || !exec.agent) throw new Error('此操作要求用户当次确认，但当前 DSH 没有审批入口。');
-    const result = await approval.request({ agent: exec.agent, callId: exec.callId, toolName: exec.name, reason, signal: exec.signal });
-    if (result !== 'allowed-once') throw new Error('用户未批准本次操作。');
+    const accepted = await requestConsent(ctx, exec, {
+      header: '操作确认', allow: '允许本次操作', question: '是否允许执行本次 Computer Use 操作？', detail: reason,
+    });
+    if (!accepted) throw new Error('用户未批准本次操作。');
   }
   exec.signal.throwIfAborted();
 }

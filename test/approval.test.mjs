@@ -4,14 +4,40 @@ import { createAppApprover, installAppApprovalHook } from '../src/approval.mjs';
 
 const exec = id => ({ agent: { session: { id } }, signal: new AbortController().signal, callId: 'call', name: 'codex_computer_read' });
 test('应用许可只在人工批准后缓存，且按会话和应用隔离', async () => {
-  let requests = 0, outcome = 'rejected';
-  const approve = createAppApprover({ get: () => ({ request: async input => { assert(input.reason.includes('本次 DSH 会话')); requests++; return outcome; } }) });
+  let requests = 0, outcome = '拒绝';
+  const approve = createAppApprover({ get: key => {
+    assert.equal(key, 'userQuestions', '不得进入 approval=never 的沙箱升级审批');
+    return { ask: async input => { assert(input.questions[0].question.includes('本次 DSH 会话')); requests++; return { answers: [{ id: input.questions[0].id, selected: [outcome] }] }; } };
+  } });
   const app = { app: 'test.exe', displayName: 'Test' };
   assert.equal(await approve(exec('a'), app), false);
-  outcome = 'allowed-once'; assert.equal(await approve(exec('a'), app), true);
+  outcome = '允许本次会话'; assert.equal(await approve(exec('a'), app), true);
   assert.equal(await approve(exec('a'), app), true); assert.equal(requests, 2);
   assert.equal(await approve(exec('b'), app), true); assert.equal(requests, 3);
   assert.equal(await approve(exec('a'), { ...app, app: 'other.exe' }), true); assert.equal(requests, 4);
+});
+test('跳过、自由文本、错误标识和重复回答均不构成批准', async () => {
+  const app = { app: 'test.exe', displayName: 'Test' };
+  for (const answer of [
+    id => ({ answers: [{ id, selected: [] }] }),
+    id => ({ answers: [{ id, selected: ['允许本次会话'], custom: '拒绝' }] }),
+    () => ({ answers: [{ id: 'wrong', selected: ['允许本次会话'] }] }),
+    id => ({ answers: [{ id, selected: ['允许本次会话'] }, { id, selected: ['允许本次会话'] }] }),
+  ]) {
+    const approve = createAppApprover({ get: () => ({ ask: async request => answer(request.questions[0].id) }) });
+    assert.equal(await approve(exec('a'), app), false);
+  }
+});
+test('取消后到达的回答不缓存应用许可', async () => {
+  let count = 0;
+  const cancel = new AbortController();
+  const approve = createAppApprover({ get: () => ({ ask: async request => {
+    count++; if (count === 1) cancel.abort();
+    return { answers: [{ id: request.questions[0].id, selected: ['允许本次会话'] }] };
+  } }) });
+  const app = { app: 'test.exe', displayName: 'Test' };
+  await assert.rejects(approve({ ...exec('a'), signal: cancel.signal }, app), /abort/i);
+  assert.equal(await approve(exec('a'), app), true); assert.equal(count, 2);
 });
 test('不存在人工审批入口时不会自动批准原生请求', async () => {
   const approve = createAppApprover({ get: () => undefined });

@@ -4,6 +4,8 @@
 
 插件调用本机安装的 `@oai/sky`，通过 DSH 原生工具返回文字和图片。首次访问应用的授权请求会显示在 DSH 中；批准后，仅在本次 DSH 会话中记住该应用。
 
+**0.1.3 支持 DSH「完全权限」模式：无需切换审批模式，首次访问应用会单独弹出授权框。** Windows 原生运行时对 Chrome / Edge 可能报浏览器 URL 无法核验；该错误已在 [OpenAI 上游问题 #25271](https://github.com/openai/codex/issues/25271) 报告，本插件没有修复这一原生限制。已实测的完整调用链是普通 Windows 测试应用的截图、输入和点击。
+
 **不需要先打开 Codex 主窗口，也不需要保持 Codex 聊天运行。** 首次调用工具时，插件自动启动后台工作进程。本机 Computer Use 辅助程序内部会启动 `codex app-server`；从 **0.1.2** 起，插件自动查找已安装的 `codex.exe`，并将路径传给自己的工作进程，无需手工设置系统 PATH。后续调用复用工作进程，插件卸载或 DSH 退出时结束。此过程不会打开 Codex 主界面；本机仍需安装 Codex 并完成 Computer Use 运行时初始化。
 
 详细步骤见 [使用说明](docs/使用说明.md)。这是社区插件，使用本机 Codex 运行时，不是 OpenAI 官方第三方接口。
@@ -15,7 +17,7 @@
 本包未发布到 npm。从 [GitHub Releases](https://github.com/Han-1413141/dsh-codex-computer-use/releases) 下载安装包，再执行：
 
 ```powershell
-dsh plugin --profile desktop add "C:\路径\dsh-codex-computer-use-0.1.2.tgz" --ignore-scripts
+dsh plugin --profile desktop add "C:\路径\dsh-codex-computer-use-0.1.3.tgz" --ignore-scripts
 ```
 
 从源码目录安装前，先在源码目录执行 `npm install` 和 `npm run build`，再安装：
@@ -66,7 +68,9 @@ dsh plugin --profile desktop add "C:\路径\dsh-codex-computer-use" --ignore-scr
 
 发送、提交、删除、付款、共享等要求当次确认的操作，使用 `confirm: true` 和具体 `reason`。这一参数由调用方按任务选择；插件不能仅从一个鼠标坐标判断所有业务后果。
 
-DSH 的 `danger-full-access` 预设通常把审批策略设为 `never`，这会拒绝首次应用授权，而不是自动同意。若看到拒绝或没有审批入口，请使用能够弹出审批的 DSH 界面和权限模式。插件不会改写你的全局权限策略。
+从 0.1.3 起，应用授权通过 DSH 的用户问答服务独立弹出，不受普通工具审批策略 `never` 影响。保留「完全权限」，在应用授权框中选择「允许本次会话」并提交即可；「拒绝」、跳过、取消或未回答都不会批准访问。`confirm: true` 在完全权限下也使用独立确认框，仅允许本次操作，不缓存。插件不会改写会话或全局权限策略；工作区和只读模式仍遵守原有桌面访问审批。
+
+需要连接支持用户问答的 DSH 桌面或 Web 界面。无人应答的无界面运行、由其他 agent 拥有的子代理不能代替用户批准首次应用访问。
 
 插件条目支持以下配置；均可省略：
 
@@ -108,10 +112,12 @@ dsh plugin --profile desktop remove dsh-codex-computer-use
 
 工具在独立 Node.js 工作进程中调用 `@oai/sky` 的公开方法，通过父子进程 IPC 与 DSH 通信，不开放 HTTP 端口，也不接受任意 JavaScript。插件只依赖本机运行时，没有复制或分发 OpenAI 的实现和原生程序。
 
-独立进程中的应用授权使用 `@oai/sky 0.7.5` 已有的 elicitation 回调接入 DSH。这个宿主回调不是稳定的第三方扩展规范；Codex 更新后若改变回调或 API，需要更新适配代码。所有授权均由 DSH 的审批服务作出，缺少审批入口或拒绝时停止调用。
+独立进程中的应用授权使用 `@oai/sky 0.7.5` 已有的 elicitation 回调接入 DSH。这个宿主回调不是稳定的第三方扩展规范；Codex 更新后若改变回调或 API，需要更新适配代码。首次应用访问由 DSH 用户问答服务收集明确选择，再将接受或拒绝传回原生运行时；缺少人工入口或拒绝时不授权。原生策略检查保持生效。
 
 已验证真实 DSH 宿主加载、原生窗口枚举、测试应用截图、控件点击、文字输入和 DSH 图片附件回传。模型回复由本地 HTTP 测试程序提供，没有调用付费模型；这证明工具调用链可用，不代表已经测试任意模型对任意应用的操作效果。
 
 0.1.2 另外使用 DSH 桌面端自带的 Electron 可执行程序验证启动：清除子进程继承的 `CODEX_*`、`SKY_*` 变量和 Codex 的 PATH 条目后，仍能自动找到 CLI 并完成原生窗口枚举。此检查没有截图、点击或输入。
+
+0.1.3 在真实 DSH 宿主的 `danger-full-access` / `never` 模式下完成了原生截图、点击、输入和按钮结果核验；授权只发生一次，5 张截图成功回传。另用真实 DSH Web 界面的模拟应用检查授权交互，结果见 [界面验证](docs/consent-ui-validation.json)。
 
 见 [验证记录](docs/validation.md)、[实际宿主结果](docs/host-validation.json) 和 [第三方说明](docs/third-party-notices.md)。

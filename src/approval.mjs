@@ -1,3 +1,31 @@
+import { randomUUID } from 'node:crypto';
+
+/** Human consent is independent of sandbox escalation (whose policy may be never). */
+export async function requestConsent(ctx, exec, { question, detail, allow, header }) {
+  exec.signal.throwIfAborted();
+  if (!exec.agent?.session.id) throw new Error('人工确认需要 DSH 会话。');
+  const questions = ctx.get('userQuestions');
+  if (!questions?.ask) throw new Error('当前 DSH 没有人工确认入口。请连接支持用户问答的 DSH 桌面或 Web 界面；无需切换完全权限模式。');
+  const id = `computer-use-consent-${randomUUID()}`;
+  let result;
+  try {
+    result = await questions.ask({
+      // Use an independent blocking card. One tool call can ask for action
+      // confirmation and app consent in sequence; reusing its callId reuses
+      // the first question card in DSH 0.2.0-rc.2.
+      agent: exec.agent, signal: exec.signal,
+      questions: [{ id, header, question, detail, multiSelect: false,
+        options: [{ label: allow }, { label: '拒绝' }] }],
+    });
+  } catch (error) {
+    exec.signal.throwIfAborted();
+    throw new Error(`应用确认未完成，操作未获授权。请连接 DSH 桌面或 Web 问答界面。${error.message}`, { cause: error });
+  }
+  exec.signal.throwIfAborted();
+  const answer = result?.answers?.length === 1 ? result.answers[0] : null;
+  return answer?.id === id && !answer.custom && answer.selected?.length === 1 && answer.selected[0] === allow;
+}
+
 /**
  * Compatibility hook used by @oai/sky 0.7.5 when its public API is used outside
  * Codex's REPL. Only app-consent elicitation is adapted; no RPC/native-pipe API
@@ -28,12 +56,13 @@ export function createAppApprover(ctx) {
     const owner = exec.agent?.session.id;
     if (!owner) throw new Error('应用授权需要 DSH 会话。');
     if (accepted.get(owner)?.has(app)) return true;
-    const approval = ctx.get('approval');
-    if (!approval) throw new Error('Codex 要求应用授权，当前 DSH 没有人工确认入口。请在桌面版或支持审批的界面运行。');
-    const reason = `允许本次 DSH 会话通过 Codex Computer Use 读取和操作应用“${displayName}”吗？应用标识：${app}。包括窗口截图、读取控件、鼠标和键盘操作；发送、删除、付款等仍需按任务另行确认。`;
-    const outcome = await approval.request({ agent: exec.agent, toolName: exec.name, callId: exec.callId, reason, signal: exec.signal });
+    const allowed = await requestConsent(ctx, exec, {
+      header: '应用授权', allow: '允许本次会话',
+      question: `允许本次 DSH 会话通过 Codex Computer Use 读取和操作应用“${displayName}”吗？`,
+      detail: `应用标识：${app}。包括窗口截图、读取控件、鼠标和键盘操作；发送、删除、付款等仍需按任务另行确认。此确认独立于普通工具审批，完全权限模式也会显示。`,
+    });
     exec.signal.throwIfAborted();
-    if (outcome !== 'allowed-once') return false;
+    if (!allowed) return false;
     if (!accepted.has(owner)) {
       if (accepted.size >= 256) accepted.delete(accepted.keys().next().value);
       accepted.set(owner, new Set());

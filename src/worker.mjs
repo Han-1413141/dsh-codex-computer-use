@@ -2,6 +2,7 @@ import { loadSky } from './runtime.mjs';
 import { ComputerController } from './controller.mjs';
 import { installAppApprovalHook } from './approval.mjs';
 import { randomUUID } from 'node:crypto';
+import { describeNativeError } from './errors.mjs';
 
 let runtime, controller, initializing, activeRequest;
 const approvals = new Map();
@@ -33,7 +34,7 @@ process.on('message', request => {
         : await controller.execute(request.action, request.args, request.owner);
       if (process.connected) process.send({ id: request.id, value });
     } catch (error) {
-      if (process.connected) process.send({ id: request.id, error: error.message });
+      if (process.connected) process.send({ id: request.id, error: describeNativeError(error).message });
     } finally { activeRequest = null; }
   });
 });

@@ -79,7 +79,12 @@ try {
       } else if (step === 5) {
         name = 'codex_computer_action'; input = { action: 'type_text', observation_id: previous.observation_id, text: expected };
       } else if (step === 6) {
-        assert(JSON.stringify(previous.accessibility).includes(expected));
+        // Native SendInput can return before the app handles queued input.
+        // Re-observe once; never resend the text when its outcome is unknown.
+        await delay(300);
+        input = { action: 'get_window_state', window_id: previous.window.id };
+      } else if (step === 7) {
+        assert(JSON.stringify(previous.accessibility).includes(expected), JSON.stringify(previous.accessibility));
         name = 'codex_computer_action'; input = { action: 'click', observation_id: previous.observation_id, element_index: indexOf(previous.accessibility.tree, 'Verify input') };
       } else {
         assert.equal(await readFile(outputPath, 'utf8'), expected); finalValue = previous;
@@ -100,17 +105,20 @@ try {
     { id: 'approved-test-fixture', name: fileURLToPath(new URL('../test/approved-fixture.mjs', import.meta.url)), config: { app: target.app, log: join(root, 'approvals.jsonl') } },
   ] }]));
   harness = new DeepSeekHarness({ cwd: root, processCwd: root, dshHome: join(root, 'home'), patches: [patch], initializeTimeoutMs: 30000, requestTimeoutMs: 90000,
-    env: { ...process.env, DSH_TELEMETRY_DISABLED: '1', DSH_PRIMARY_RUNTIME: '', DSH_PERMISSION_MODE: 'workspace-write', DEEPSEEK_API_KEY: 'local-fixture', DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}` } });
+    env: { ...process.env, DSH_TELEMETRY_DISABLED: '1', DSH_PRIMARY_RUNTIME: '', DSH_PERMISSION_MODE: 'danger-full-access', DEEPSEEK_API_KEY: 'local-fixture', DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}` } });
   const result = await harness.run('Exercise Computer Use only on the dedicated local fixture window.');
   assert.equal(result.finalResponse, 'native-computer-use-ok', JSON.stringify({ step, serverError, events: result.events.filter(e => /error|failure|finish/.test(e.type)) }).slice(0, 8000));
   const toolResults = result.events.filter(event => event.type === 'tool/result');
-  assert.equal(toolResults.length, 6);
+  const consentLog = (await readFile(join(root, 'approvals.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+  assert.equal(consentLog.length, 1, '应用许可应只询问一次且无需沙箱升级。');
+  assert.equal(consentLog[0].kind, 'fixture-app-consent');
+  assert.equal(toolResults.length, 7);
   for (const event of toolResults) {
     assert(!event.data.message.isError, JSON.stringify(event));
     imageCount += event.data.message.content.filter(x => x.type === 'image' && x.attachment?.attachmentId).length;
   }
   assert(imageCount >= 4, '截图没有进入 DSH 原生附件。');
-  const report = { passed: true, dsh_version: '0.2.0-rc.2', model: 'local HTTP fixture; no paid model request', trace, image_count: imageCount, typed_text_verified: true, final_accessibility: finalValue.accessibility?.tree };
+  const report = { passed: true, plugin_version: '0.1.3', dsh_version: '0.2.0-rc.2', permission_mode: 'danger-full-access', approval_policy: 'never', app_consent_requests: consentLog.length, model: 'local HTTP fixture; no paid model request', trace, image_count: imageCount, typed_text_verified: true, final_accessibility: finalValue.accessibility?.tree };
   await writeFile(new URL('../docs/host-validation.json', import.meta.url), JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report, null, 2));
 } finally {

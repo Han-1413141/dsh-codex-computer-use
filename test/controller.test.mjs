@@ -91,10 +91,18 @@ test('截图通过附件服务保存，文本结果不含 base64', async () => {
 });
 test('全访问模式也必须执行显式的当次确认', async () => {
   let asked = 0;
-  const ctx = { sandboxPolicy: { resolve: () => ({ mode: 'danger-full-access' }) }, get: () => ({ request: async () => { asked++; return 'rejected'; } }) };
+  const ctx = { sandboxPolicy: { resolve: () => ({ mode: 'danger-full-access' }) }, get: key => key === 'userQuestions' ? { ask: async input => { asked++; return { answers: [{ id: input.questions[0].id, selected: ['拒绝'] }] }; } } : { request: () => assert.fail('完全权限下不应请求普通工具审批') } };
   const exec = { agent: { session: { id: 'a' } }, signal: new AbortController().signal, callId: 'x', name: 'tool' };
   await assert.rejects(authorize(ctx, exec, { confirm: true, reason: '确认操作' }, 'click'), /未批准/);
   assert.equal(asked, 1);
+});
+test('原生停止错误不再要求重新观察或重复调用', async () => {
+  const f = setup(); const state = await f.observe();
+  f.sky.click = async () => { throw new Error('Computer Use has been stopped for this turn because it could not determine the current browser URL on Windows with enough confidence to enforce policy.'); };
+  await assert.rejects(f.controller.execute('click', { observation_id: state.observation_id, element_index: 2 }, 'session-a'), error => {
+    assert(error.message.includes('已停止本轮')); assert(!error.message.includes('请重新观察')); return true;
+  });
+  assert.equal(f.controller.observation, null);
 });
 test('只读沙箱不会在缺少审批入口时执行桌面操作', async () => {
   const ctx = { sandboxPolicy: { resolve: () => ({ mode: 'read-only' }) }, get: () => undefined };

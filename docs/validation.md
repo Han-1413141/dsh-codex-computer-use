@@ -4,6 +4,23 @@
 
 ## 已通过
 
+### 0.1.3 完全权限下的授权与原生操作
+
+- 真实 DSH SDK 宿主保持 `danger-full-access`，审批策略保持 `never`。测试响应器检查这两个实际值，未改变权限设置。
+- 原生调用完成窗口枚举、测试窗口截图、点击输入框、输入文字、重新观察、点击验证按钮。应用实际写出 `DSH Codex native input 2026`，5 张图片经 DSH 附件服务回传。
+- 此次测试沿用用户对自建测试窗口的授权，测试专用响应器只接受该窗口对应的应用标识，不包含在安装包中。
+- 第一次检查发现输入后立即返回的快照尚未包含文字；测试增加一次观察，未重发输入，最终通过按钮写出的文件验证。原生输入返回与应用处理完输入队列是两个时刻。
+- 另启动真实 DSH Web 宿主，通过界面操作模拟应用的授权框，验证拒绝、允许、同一会话复用、单次操作确认、同一次工具调用内连续确认。四次工具结果均保持 `danger-full-access` / `never`。此界面测试不授予任何真实应用权限。
+- 23 项针对性测试、JavaScript 语法检查和菜单构建通过。取消后的迟到回答、跳过、自由文本、错误问题标识和重复回答均不会授予应用访问许可。
+
+记录见 [原生操作结果](host-validation.json) 和 [真实界面结果](consent-ui-validation.json)。两项使用本地 HTTP 模型测试程序，没有付费模型请求。
+
+### Windows 浏览器限制
+
+用户实测的浏览器错误为 `could not determine the current browser URL on Windows with enough confidence to enforce policy`。已核对 [OpenAI 上游问题 #25271](https://github.com/openai/codex/issues/25271)，2026-10-01 查阅时仍为 Open，记录了相同错误及普通桌面应用可以工作的情况。
+
+0.1.3 识别这一停止错误，保留原始错误并明确要求停止本轮操作，不再附加「重新观察」的通用恢复建议。插件未修改 OpenAI 的 URL 校验，未绕过停止条件，也未把普通窗口测试通过记作浏览器测试通过。
+
 ### 0.1.2 独立启动 DSH
 
 实际 DSH 会话中，原生工具返回 `failed to launch codex app-server: program not found`。错误来自 Codex 原生辅助程序内部；0.1.0 的测试继承了 Codex 提供的 CLI 路径，因此没有覆盖独立启动环境。

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isNativeStop, describeNativeError } from './errors.mjs';
 
 export const READ_ACTIONS = ['list_windows', 'list_apps', 'get_window_state'];
 export const INPUT_ACTIONS = ['launch_app', 'click', 'press_key', 'type_text', 'scroll', 'set_value', 'drag', 'perform_secondary_action', 'activate_window'];
@@ -109,6 +110,7 @@ export class ComputerController {
       return { action, ...(await this.capture(owner, window, args)) };
     } catch (error) {
       this.observation = null;
+      if (isNativeStop(error)) throw describeNativeError(error);
       throw new Error(`${applied ? '操作已执行，但刷新失败' : '操作结果未知'}；请重新观察，禁止直接重试。${error.message}`);
     }
   }

@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "plugin_version": "0.1.3",
+  "dsh_version": "0.2.0-rc.2",
+  "native_access": false,
+  "model": "local HTTP fixture",
+  "results": [
+    {
+      "accepted": false,
+      "mode": "danger-full-access",
+      "policy": "never"
+    },
+    {
+      "accepted": true,
+      "mode": "danger-full-access",
+      "policy": "never"
+    },
+    {
+      "accepted": true,
+      "mode": "danger-full-access",
+      "policy": "never"
+    },
+    {
+      "accepted": true,
+      "mode": "danger-full-access",
+      "policy": "never"
+    }
+  ]
+}
