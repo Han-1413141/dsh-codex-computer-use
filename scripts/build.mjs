@@ -8,6 +8,7 @@ const result = await build({
   entryPoints: ['src/browser.mjs'],
   write: false, bundle: true, platform: 'browser', format: 'cjs',
   target: 'es2022', minify: true, external: ['react'],
+  tsconfigRaw: { compilerOptions: { alwaysStrict: true } },
 });
 const output = `window.__ModuleLoader__.load({id:"dsh-codex-computer-use",factory(require){const module={exports:{}};const exports=module.exports;\n${result.outputFiles[0].text}\nreturn module.exports;}});\n`;
 await mkdir(new URL('../lib/', import.meta.url), { recursive: true });
