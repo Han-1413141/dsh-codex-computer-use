@@ -36,6 +36,15 @@ dsh plugin --profile desktop add "C:\路径\dsh-codex-computer-use" --ignore-scr
 
 > 使用 Codex Computer Use，在记事本的新文档里输入“你好，DSH”。先检查窗口和输入焦点，每步操作后检查结果。
 
+### 从公开安装包直接安装
+
+也可以直接把 GitHub Release 的公开下载地址交给 DSH CLI：
+
+```powershell
+dsh plugin --profile desktop add https://github.com/Han-1413141/dsh-codex-computer-use/releases/download/v0.1.4/dsh-codex-computer-use-0.1.4.tgz --ignore-scripts
+```
+
+
 ## 两个工具
 
 | 工具 | 操作 |
